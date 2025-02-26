@@ -4,6 +4,27 @@
   
   
   <entry>
+    <title>PA2.3-程序如何在AM上运行</title>
+    <link href="/2025/02/26/PA2-3-%E7%A8%8B%E5%BA%8F%E5%A6%82%E4%BD%95%E5%9C%A8AM%E4%B8%8A%E8%BF%90%E8%A1%8C/"/>
+    <url>/2025/02/26/PA2-3-%E7%A8%8B%E5%BA%8F%E5%A6%82%E4%BD%95%E5%9C%A8AM%E4%B8%8A%E8%BF%90%E8%A1%8C/</url>
+    
+    <content type="html"><![CDATA[<h2 id="计算机是个抽象层-程序如何在计算机上运行"><a href="#计算机是个抽象层-程序如何在计算机上运行" class="headerlink" title="计算机是个抽象层:程序如何在计算机上运行"></a>计算机是个抽象层:程序如何在计算机上运行</h2><ul><li>AM为程序提供了运行时环境.</li><li>AM将NEMU的接口做了一层抽象,NEMU是底层的硬件模拟层(处理指令执行、设备交互),而AM在此之上构建软件抽象层.</li><li>AM和NEMU的运行依赖于宿主环境的运行时环境.</li></ul><h3 id="NEMU与AM如何协同工作"><a href="#NEMU与AM如何协同工作" class="headerlink" title="NEMU与AM如何协同工作"></a>NEMU与AM如何协同工作</h3><p>NEMU中进行注册内存映射操作,将一块内存映射到NEMU的端口中(MMIO),并设定回调函数,当有对这块内存读写操作时就调用回调函数.在回调函数中使用C语言的API更新对应设备.<br>AM中对内存进行读写,间接的操控设备.</p><h3 id="AM-运行时环境-程序如何协同工作"><a href="#AM-运行时环境-程序如何协同工作" class="headerlink" title="AM,运行时环境,程序如何协同工作"></a>AM,运行时环境,程序如何协同工作</h3><p>AM为程序提供了运行时环境,程序通过调用AM提供的IOE接口访问AM中的抽象寄存器并触发,而AM通过读取抽象寄存器的值对MMIO进行读写.以这种方法程序间接实现对MMIO的读写,控制设备.</p><h2 id="程序是个状态机-游戏是如何运行的"><a href="#程序是个状态机-游戏是如何运行的" class="headerlink" title="程序是个状态机:游戏是如何运行的"></a>程序是个状态机:游戏是如何运行的</h2><ul><li>初始化:ioe_init初始化IOE,video_init初始化VGA,读取timer的初始值</li><li>获取游戏运行时间(时钟)</li><li>更新游戏逻辑(TRM)</li><li>读取键盘按键(键盘):NONE-&gt;下一个状态,Esc-&gt;halt,按键-&gt;检查是否命中-&gt;下一个状态</li><li>刷新页面(VGA)</li></ul>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>原创</tag>
+      
+      <tag>一生一芯</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>测试</title>
     <link href="/2025/02/26/%E6%B5%8B%E8%AF%95/"/>
     <url>/2025/02/26/%E6%B5%8B%E8%AF%95/</url>
