@@ -19,24 +19,23 @@
   <meta name="author" content="lethe">
   <meta name="keywords" content="">
   
-    <meta name="description" content="作为一名数字电子技术学生对Verilog HDL语言的学习经验分享">
+    <meta name="description" content="和学弟讨论volatile关键字时提到的一个有意思的案例,汇编视角分析编译优化的不同影响">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Verilog入门经验分享">
-<meta property="og:url" content="http://example.com/2025/05/08/Verilog%E5%85%A5%E9%97%A8%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/index.html">
+<meta property="og:title" content="在编译优化角度分析volatile关键字-一个有趣的案例">
+<meta property="og:url" content="http://example.com/2025/09/01/%E5%9C%A8%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90volatile%E5%85%B3%E9%94%AE%E5%AD%97-%E4%B8%80%E4%B8%AA%E6%9C%89%E8%B6%A3%E7%9A%84%E6%A1%88%E4%BE%8B/index.html">
 <meta property="og:site_name" content="TLewis&#39;s Blog">
-<meta property="og:description" content="作为一名数字电子技术学生对Verilog HDL语言的学习经验分享">
+<meta property="og:description" content="和学弟讨论volatile关键字时提到的一个有意思的案例,汇编视角分析编译优化的不同影响">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2025-05-08T04:43:32.000Z">
-<meta property="article:modified_time" content="2025-05-08T05:16:25.339Z">
+<meta property="article:published_time" content="2025-09-01T10:18:20.000Z">
+<meta property="article:modified_time" content="2025-09-01T15:33:09.368Z">
 <meta property="article:author" content="lethe">
-<meta property="article:tag" content="数字电路">
-<meta property="article:tag" content="Verilog">
-<meta property="article:tag" content="经验分享">
+<meta property="article:tag" content="C语言">
+<meta property="article:tag" content="编译优化">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>Verilog入门经验分享 - TLewis&#39;s Blog</title>
+  <title>在编译优化角度分析volatile关键字-一个有趣的案例 - TLewis&#39;s Blog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -219,7 +218,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="Verilog入门经验分享"></span>
+            <span id="subtitle" data-typed-text="在编译优化角度分析volatile关键字-一个有趣的案例"></span>
           
         </div>
 
@@ -230,8 +229,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2025-05-08 12:43" pubdate>
-          2025年5月8日 下午
+        <time datetime="2025-09-01 18:18" pubdate>
+          2025年9月1日 晚上
         </time>
       </span>
     
@@ -242,7 +241,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          1.3k 字
+          1.4k 字
         
       </span>
     
@@ -299,66 +298,37 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">Verilog入门经验分享</h1>
+            <h1 id="seo-header">在编译优化角度分析volatile关键字-一个有趣的案例</h1>
             
             
               <div class="markdown-body">
                 
-                <p>作为一名数字电子技术学生对Verilog HDL语言的学习经验分享</p>
+                <p>和学弟讨论volatile关键字时提到的一个有意思的案例,汇编视角分析编译优化的不同影响</p>
 <span id="more"></span>
 
+<p>代码示例:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs C"><span class="hljs-type">void</span> <span class="hljs-title function_">fun</span><span class="hljs-params">()</span> &#123;<br>  <span class="hljs-keyword">extern</span> <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span> _end;<br>  <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span> *p = &amp;_end;<br>  *p = <span class="hljs-number">0x0</span>;<br>  <span class="hljs-keyword">while</span>(*p != <span class="hljs-number">0xff</span>);<br>  *p = <span class="hljs-number">0x33</span>;<br>  *p = <span class="hljs-number">0x34</span>;<br>  *p = <span class="hljs-number">0x86</span>;<br>&#125;<br><br><span class="hljs-type">int</span> <span class="hljs-title function_">main</span><span class="hljs-params">(<span class="hljs-type">void</span>)</span>&#123;<br>    fun();<br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="情况1：-p-0x0，无volatile，-O2优化"><a href="#情况1：-p-0x0，无volatile，-O2优化" class="headerlink" title="情况1：*p &#x3D; 0x0，无volatile，-O2优化"></a>情况1：*p &#x3D; 0x0，无volatile，-O2优化</h2><p>我们使用-O2优化运行代码,不出所料程序卡死在fun()的死循环中。<br>笔者比较熟悉RISC-V汇编，将其交叉编译后进行反汇编。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash">&gt; riscv64-linux-gnu-gcc -O2 ./fun.c -o fun_rv<br>&gt; riscv64-linux-gnu-objdump -d ./fun_rv | code -<br>Reading from stdin via: /tmp/code-stdin-syc<br></code></pre></td></tr></table></figure>
+<p>汇编代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs assembly"><br>00000000000005a0 &lt;main&gt;:<br> 5a0:	00002797          	auipc	a5,0x2<br> 5a4:	a907b783          	ld	a5,-1392(a5) # 2030 &lt;_GLOBAL_OFFSET_TABLE_+0x10&gt;<br> 5a8:	00078023          	sb	zero,0(a5)<br> 5ac:	a001                	j	5ac &lt;main+0xc&gt;<br><br>0000000000000668 &lt;fun&gt;:<br> # 取p的地址<br> 668:	00002797          	auipc	a5,0x2<br> 66c:	9c87b783          	ld	a5,-1592(a5) # 2030 &lt;_GLOBAL_OFFSET_TABLE_+0x10&gt;<br> # 将0x0写入p对应的地址<br> 670:	00078023          	sb	zero,0(a5)<br> # 死循环<br> 674:	a001                j	674 &lt;fun+0xc&gt;<br></code></pre></td></tr></table></figure>
+<p>编译器认为 while(*p !&#x3D; 0xff); 的结果 可在编译期推导：*p 已经被写死为 0x0，所以循环条件永远为真。<br>可以看到原C代码中<code>while(*p != 0xff)</code>，在汇编中<em>并未读取有关p的值就进行循环</em>，而且优化后的程序<em>只对p对应地址写入了一次，优化掉了while后的三次写入操作</em>。同时在main和fun中没有函数返回（ret）的操作。<br>这就是为什么不加 volatile，编译器会把内存访问假设为“寄存器中的确定值”，导致代码和预期完全不同。</p>
+<h2 id="情况2：-p-0x0，有volatile，-O2优化"><a href="#情况2：-p-0x0，有volatile，-O2优化" class="headerlink" title="情况2：*p &#x3D; 0x0，有volatile，-O2优化"></a>情况2：*p &#x3D; 0x0，有volatile，-O2优化</h2><p>我们将<code>unsigned char *p = &amp;_end;</code>前加上<code>volatile</code>，-02优化，重新编译运行。这一次程序也卡死在fun()的死循环中。<br>我们相同操作进行反汇编。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><code class="hljs assembly">00000000000005a0 &lt;main&gt;:<br> # 取p的地址<br> 5a0:	00002717          	auipc	a4,0x2<br> 5a4:	a9073703          	ld	a4,-1392(a4) # 2030 &lt;_GLOBAL_OFFSET_TABLE_+0x10&gt;<br> # 将0x0写入p对应地址<br> 5a8:	00070023          	sb	zero,0(a4)<br> # 将p地址处对应的值写入a4寄存器中，将立即数0xff写入a3寄存器中，并比较两者的值，若不相等即循环读p地址的值比较<br> # 就是这里的while(*p != 0xff);<br> 5ac:	0ff00693          	li	a3,255<br> 5b0:	00074783          	lbu	a5,0(a4)<br> 5b4:	fed79ee3          	bne	a5,a3,5b0 &lt;main+0x10&gt;<br> # 将0x33写入p对应地址<br> 5b8:	03300793          	li	a5,51<br> 5bc:	00f70023          	sb	a5,0(a4)<br> # 将0x34写入p对应地址<br> 5c0:	03400793          	li	a5,52<br> 5c4:	00f70023          	sb	a5,0(a4)<br> # 将0x86写入p对应地址<br> 5c8:	f8600793          	li	a5,-122<br> 5cc:	00f70023          	sb	a5,0(a4)<br> # 函数返回值为0（RV32调用约定）<br> 5d0:	4501                	li	a0,0<br> # 函数返回<br> 5d2:	8082                	ret<br><br># 函数内联导致的重复<br>000000000000068c &lt;fun&gt;:<br> 68c:	00002717          	auipc	a4,0x2<br> 690:	9a473703          	ld	a4,-1628(a4) # 2030 &lt;_GLOBAL_OFFSET_TABLE_+0x10&gt;<br> 694:	00070023          	sb	zero,0(a4)<br> 698:	0ff00693          	li	a3,255<br> 69c:	00074783          	lbu	a5,0(a4)<br> 6a0:	fed79ee3          	bne	a5,a3,69c &lt;fun+0x10&gt;<br> 6a4:	03300793          	li	a5,51<br> 6a8:	00f70023          	sb	a5,0(a4)<br> 6ac:	03400793          	li	a5,52<br> 6b0:	00f70023          	sb	a5,0(a4)<br> 6b4:	f8600793          	li	a5,-122<br> 6b8:	00f70023          	sb	a5,0(a4)<br> 6bc:	8082                	ret<br><br></code></pre></td></tr></table></figure>
+<p>在这里值得注意的是，编译器将fun内联进了main里，做了<strong>函数内联优化</strong>，故在main里进行了fun的操作而不存在函数调用。而同时fun函数符号又存在于ELF文件当中，因此也存在于反汇编结果之中。</p>
+<p>编译器可能会将非易失性变量的值存储在 CPU 寄存器中，以便更快地访问，避免重复从内存读取。对于<code>volatile</code>变量，编译器每次访问时都会强制从内存读取该值。<br>我们可以看到，在C源代码中每一次对p的读取&#x2F;写入操作都没有被编译器优化。</p>
+<h2 id="情况3：-p-0xff，无volatile，-O2优化"><a href="#情况3：-p-0xff，无volatile，-O2优化" class="headerlink" title="情况3：*p &#x3D; 0xff，无volatile，-O2优化"></a>情况3：*p &#x3D; 0xff，无volatile，-O2优化</h2><p>我们将<code>volatile unsigned char *p = &amp;_end;</code>的<code>volatile</code>删去，<code>*p = 0x0;</code>改为<code>*p = 0xff;</code> ，-02优化，重新编译运行。程序现在可以正常退出。<br>我们进行反汇编查看。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs assembly">00000000000005a0 &lt;main&gt;:<br> # 取p的地址<br> 5a0:	00002797          	auipc	a5,0x2<br> 5a4:	a907b783          	ld	a5,-1392(a5) # 2030 &lt;_GLOBAL_OFFSET_TABLE_+0x10&gt;<br> # 将0x86写入p对应地址<br> 5a8:	f8600713          	li	a4,-122<br> 5ac:	00e78023          	sb	a4,0(a5)<br> # 函数返回值为0（RV32调用约定）<br> 5b0:	4501                	li	a0,0<br> # 函数返回<br> 5b2:	8082                	ret<br><br># 函数内联导致的重复<br>000000000000066c &lt;fun&gt;:<br> 66c:	00002797          	auipc	a5,0x2<br> 670:	9c47b783          	ld	a5,-1596(a5) # 2030 &lt;_GLOBAL_OFFSET_TABLE_+0x10&gt;<br> 674:	f8600713          	li	a4,-122<br> 678:	00e78023          	sb	a4,0(a5)<br> 67c:	8082                	ret<br></code></pre></td></tr></table></figure>
+<p>在这里编译器将C源代码中从<code>*p = 0x0;</code>到<code>*p = 0x34;</code>这一段代码全部优化掉了，是因为在这里while循环和对p的多次写入无意义，编译器可以直接优化成最后的<code>*p = 0x86;</code>。(死代码消除与值传播)</p>
+<h2 id="总结：编译优化"><a href="#总结：编译优化" class="headerlink" title="总结：编译优化"></a>总结：编译优化</h2><blockquote>
+<p>我们可以从程序行为的角度来理解编译优化: 如果两个程序在某种意义上”一致”, 就可以用”简单”的替代”复杂”的. 其中, 遵循C语言标准逐条语句执行的行为称为”严格执行”. 以”严格执行”为基准, C语言标准对上文的”一致”作了严谨的定义, 即优化后的程序应满足”程序可观测行为”(C99标准手册5.1.2.3节第6点)的一致性, 具体包括:</p>
 <ol>
-<li><p>数电基础</p>
-<ul>
-<li>逻辑代数基础.</li>
-<li>组合逻辑电路:各种门电路,一些常用电路比如数据选择器,加法器,编码器,译码器,比较器等要十分熟练,要会看电路推导逻辑表达式和真值表,也要熟练逆推.</li>
-<li>时序逻辑电路:双稳态电路,锁存器,触发器,寄存器,一些常用电路比如移位寄存器,计数器等要十分熟练,状态转移图&#x2F;状态机要十分熟练,要会看电路图推波形图,也要熟练逆推.</li>
-</ul>
-</li>
-<li><p>Verilog基础</p>
-<ul>
-<li>Verilog基础语法和关键字<br> <a target="_blank" rel="noopener" href="https://www.runoob.com/w3cnote/verilog-tutorial.html">菜鸟教程</a><br> <a target="_blank" rel="noopener" href="https://vlab.ustc.edu.cn/guide/doc_verilog.html">中科大Verilog语法入门</a></li>
-<li><strong>重要</strong>:对Verilog HDL要理解其硬件设计的基本概念,即”实例化+连线”,避免使用行为建模方法,避免使用不可综合语句.<br> <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1PS4y1s7XW">如何从电路设计角度入门Verilog</a></li>
-</ul>
-<blockquote>
-<p><strong>! 强烈建议初学者不要使用行为建模方式设计电路</strong><br>Verilog一开始并不是为了设计可综合电路而提出的，它的本质是一门基于事件队列模型的电路建模语言。因此，行为建模很容易会让初学者偏离描述电路的初衷: 开发者需要看着电路图，心里想象电路的行为，然后转化成事件队列模型的思考方式，最后再用行为建模方式来描述电路的行为，综合器再来根据这样的描述推导出相应的电路。从这个过程来看，这不仅是没有必要的，而且还很容易引入错误：</p>
-<ul>
-<li>如果开发者心里本身就已经有电路图，直接描述它是最方便的</li>
-<li>如果开发者心里本身就已经有电路图，而开发者对行为建模方式的理解所有偏差，可能会采用了错误的描述方式，从而设计出非预期的电路</li>
-<li>如果开发者心里没有电路图，而是期望通过行为建模方式让综合器生成某种行为的电路，这就已经偏离“描述电路”的本质了。大部分同学非常容易犯这样的错误，把行为建模当作过程式的C语言来写，尝试把任意复杂的行为描述映射到电路，最终综合器只会生成出延迟大，面积大，功耗高的低质量电路</li>
-</ul>
-<p>所以，直到大家掌握“描述电路”的思维而不被行为建模误导之前，我们强烈建议初学者远离行为建模方式，仅通过数据流建模和结构化建模方式直接描述电路。例如，上文关于if和always的说法从某种程度上来说是正确的，但下面的问题可以帮助大家测试自己是否已经掌握了Verilog的本质：</p>
-<ul>
-<li>在硬件描述语言中，“执行”的精确含义是什么？</li>
-<li>是谁在执行Verilog的语句？ 是电路，综合器，还是其它的？</li>
-<li>if的条件满足，就不执行else后的语句，这里的“不执行”又是什么意思？ 和描述电路有什么联系？</li>
-<li>有“并发执行”，又有“顺序执行”，还有“任何一个变量发生变化就立即执行”，以及“在任何情况下都执行”，它们都是如何在设计出来的电路中体现的？<br>如果你无法对这些问题作出明确的回答，我们强烈建议你不要使用行为建模方式。如果你真的想弄懂它们，你需要阅读 Verilog标准手册 。</li>
-</ul>
-<p><strong>真正的描述电路 &#x3D; 实例化 + 连线</strong><br>忘记行为建模方式，就可以很容易回归到描述电路的简单本质。想象一下，你手中有一张电路图纸，如果你需要向其它人描述图纸上的内容，你将会如何描述？ 你一定会说出类似“有一个A元件&#x2F;模块，它的x引脚和另一个B元件&#x2F;模块的y引脚相连”的描述，因为这才是描述电路的最自然的方式。用HDL设计电路，就是在用HDL来描述电路图纸，图纸上有什么，就直接描述什么。所以，用HDL描述电路，无非是做两件事情：</p>
-<ul>
-<li>实例化：在电路板上放一个元件&#x2F;模块，可以是一个门电路，或者是由门电路组成的模块</li>
-<li>连线：用导线将元件&#x2F;模块的引脚正确地连起来<br>大家可以体会一下，数据流建模和结构化建模是如何体现这两件事的，而行为建模又是如何把这两件简单的事情复杂化的。</li>
-</ul>
-</blockquote>
-<ul>
-<li><p>硬件设计思维</p>
-<ul>
-<li>多用Logisim&#x2F;Modelsim画电路&#x2F;写Verilog,跑仿真,看波形</li>
-<li>跟着这款游戏<a target="_blank" rel="noopener" href="https://store.steampowered.com/app/1444480/Turing_Complete/">Turing Complete</a>学习也未尝不可</li>
-</ul>
-</li>
-<li><p>多上手实践</p>
-<ul>
-<li>Verilog刷题网站:<a target="_blank" rel="noopener" href="https://hdlbits.01xz.net/wiki/Main_Page">HDLBits</a></li>
-<li><a target="_blank" rel="noopener" href="https://nju-projectn.github.io/dlco-lecture-note/exp/01.html">南京大学的数字电路与计算机组成实验</a></li>
-<li>上板练习,练习工程能力:野火&#x2F;小梅哥&#x2F;…的FPGA课程</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>进阶:时序约束与优化<br>竞争冒险,建立&#x2F;保持时间,时序约束与时序优化…</p>
-</li>
+<li>对volatile关键字修饰变量的访问需要严格执行</li>
+<li>程序结束时, 写入文件的数据需要与严格执行时一致</li>
+<li>交互式设备的输入输出(stdio.h)需要与严格执行时一致<br>“可观测行为”刻画的是从外部视角看C程序对外界的影响, 例如, 第2点要求那些没有实时性的外部操作在最后”看起来一致”, 第3点要求那些有实时性的外部操作在执行过程中”看起来一致”.<br>因此, 只要优化后仍然满足程序可观测行为的一致性, 这种优化都是”正确”的. 在这个条件下, 如果优化后的程序变量更少, 或者语句更少, 可以预期程序的性能表现就会更优.</li>
 </ol>
+</blockquote>
 
                 
               </div>
@@ -371,11 +341,9 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/tags/%E6%95%B0%E5%AD%97%E7%94%B5%E8%B7%AF/" class="print-no-link">#数字电路</a>
+        <a href="/tags/C%E8%AF%AD%E8%A8%80/" class="print-no-link">#C语言</a>
       
-        <a href="/tags/Verilog/" class="print-no-link">#Verilog</a>
-      
-        <a href="/tags/%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/" class="print-no-link">#经验分享</a>
+        <a href="/tags/%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96/" class="print-no-link">#编译优化</a>
       
     </div>
   
@@ -387,8 +355,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>Verilog入门经验分享</div>
-      <div>http://example.com/2025/05/08/Verilog入门经验分享/</div>
+      <div>在编译优化角度分析volatile关键字-一个有趣的案例</div>
+      <div>http://example.com/2025/09/01/在编译优化角度分析volatile关键字-一个有趣的案例/</div>
     </div>
     <div class="license-meta">
       
@@ -400,7 +368,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2025年5月8日</div>
+          <div>2025年9月1日</div>
         </div>
       
       
@@ -432,18 +400,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2025/09/01/%E5%9C%A8%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90volatile%E5%85%B3%E9%94%AE%E5%AD%97-%E4%B8%80%E4%B8%AA%E6%9C%89%E8%B6%A3%E7%9A%84%E6%A1%88%E4%BE%8B/" title="在编译优化角度分析volatile关键字-一个有趣的案例">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">在编译优化角度分析volatile关键字-一个有趣的案例</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2025/03/28/PA3-1-%E7%90%86%E8%A7%A3%E7%A9%BF%E8%B6%8A%E6%97%B6%E7%A9%BA%E7%9A%84%E6%97%85%E7%A8%8B/" title="PA3.1-理解穿越时空的旅程">
-                        <span class="hidden-mobile">PA3.1-理解穿越时空的旅程</span>
+                      <a href="/2025/05/08/Verilog%E5%85%A5%E9%97%A8%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/" title="Verilog入门经验分享">
+                        <span class="hidden-mobile">Verilog入门经验分享</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
